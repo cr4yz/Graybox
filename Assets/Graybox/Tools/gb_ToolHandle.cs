@@ -7,8 +7,8 @@ namespace Graybox.Tools
     public class gb_ToolHandle : MonoBehaviour
     {
 
-        public UnityEvent<gb_ToolHandle> OnHandleDown = new UnityEvent<gb_ToolHandle>();
-        public UnityEvent<gb_ToolHandle> OnHandleUp = new UnityEvent<gb_ToolHandle>();
+        public UnityEvent OnHandleDown = new UnityEvent();
+        public UnityEvent OnHandleUp = new UnityEvent();
 
         public bool IsMouseDown { get; private set; }
         public bool IsHovered { get; private set; }
@@ -54,7 +54,7 @@ namespace Graybox.Tools
                 {
                     _activeHandle = this;
                     IsMouseDown = true;
-                    OnHandleDown.Invoke(this);
+                    OnHandleDown.Invoke();
                 }
             }
 
@@ -62,7 +62,7 @@ namespace Graybox.Tools
             {
                 _activeHandle = null;
                 IsMouseDown = false;
-                OnHandleUp.Invoke(this);
+                OnHandleUp.Invoke();
             }
         }
 

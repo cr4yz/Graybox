@@ -38,6 +38,19 @@ namespace Graybox
             }
         }
 
+        public T Create<T>(GameObject obj = null)
+            where T : gb_Object, new()
+        {
+            var result = new T();
+            if (!obj)
+            {
+                obj = CreateObject();
+            }
+            result.Integrate(obj);
+            AddObject(result);
+            return result;
+        }
+
         public GameObject CreateObject()
         {
             var obj = new GameObject();
@@ -53,6 +66,7 @@ namespace Graybox
             }
             obj.GameObject.transform.SetParent(transform, true);
             MapInfo.Objects.Add(obj);
+            obj.Map = this;
         }
 
         public void Save(string filePath)
@@ -84,8 +98,9 @@ namespace Graybox
             foreach (var gbObject in objList)
             {
                 var gameObject = new GameObject($"gb_Object #{gbObject.ObjectId}");
-                gbObject.IntegrateAndAdd(gameObject, this);
+                gbObject.Integrate(gameObject);
                 gbObject.Load();
+                AddObject(gbObject);
             }
 
             FilePath = filePath;
@@ -113,10 +128,8 @@ namespace Graybox
         {
             var obj = new GameObject("[gb_Map: " + mapName + "]");
             var result = obj.AddComponent<gb_Map>();
-            var mapInfoObj = new GameObject("[gb_MapInfo]");
             result.MapInfo = new gb_MapInfo();
             result.MapInfo.Name = mapName;
-            result.MapInfo.IntegrateAndAdd(mapInfoObj, result);
             return result;
         }
 

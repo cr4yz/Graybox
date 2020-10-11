@@ -1,3 +1,6 @@
+using Graybox.In;
+using Graybox.Tools;
+using Newtonsoft.Json;
 using System.Linq;
 using UnityEngine;
 
@@ -14,16 +17,33 @@ namespace Graybox
         public bool ColliderIsConvex { get; set; }
         public bool ColliderIsTrigger { get; set; }
 
-        private gb_DrawMeshOutline _outline;
+        [JsonIgnore]
+        public MeshFilter MeshFilter => _mf;
+        [JsonIgnore]
+        private MeshFilter _mf;
+        [JsonIgnore]
+        private MeshRenderer _mr;
+        [JsonIgnore]
+        private MeshCollider _mc;
+
+        protected override void OnSave()
+        {
+            var mesh = _mf.sharedMesh;
+            Vertices = mesh.vertices;
+            Triangles = mesh.triangles;
+            Colors = mesh.colors;
+            Normals = mesh.normals;
+            Uvs = mesh.uv;
+
+            ColliderIsConvex = _mc.convex;
+            ColliderIsTrigger = _mc.isTrigger;
+
+            Materials = _mr.materials.Select(x => (gb_Material)x).ToArray();
+        }
 
         protected override void OnLoad()
         {
-            if (!GameObject.TryGetComponent(out MeshFilter mf))
-            {
-                mf = GameObject.AddComponent<MeshFilter>();
-            }
-
-            mf.mesh = new Mesh()
+            _mf.sharedMesh = new Mesh()
             {
                 vertices = Vertices,
                 triangles = Triangles,
@@ -32,48 +52,43 @@ namespace Graybox
                 uv = Uvs
             };
 
-            if (!GameObject.TryGetComponent(out MeshRenderer mr))
-            {
-                mr = GameObject.AddComponent<MeshRenderer>();
-            }
+            _mr.materials = Materials.Select(x => (Material)x).ToArray();
 
-            mr.materials = Materials.Select(x => (Material)x).ToArray();
-
-            if (!GameObject.TryGetComponent(out MeshCollider mc))
-            {
-                mc = GameObject.AddComponent<MeshCollider>();
-            }
-
-            mc.convex = ColliderIsConvex;
-            mc.isTrigger = ColliderIsTrigger;
+            _mc.sharedMesh = _mf.sharedMesh;
+            _mc.convex = ColliderIsConvex;
+            _mc.isTrigger = ColliderIsTrigger;
         }
 
-        protected override void OnSave()
+        protected override void OnIntegrated()
         {
-            var mesh = GameObject.GetComponent<MeshFilter>().mesh;
-            Vertices = mesh.vertices;
-            Triangles = mesh.triangles;
-            Colors = mesh.colors;
-            Normals = mesh.normals;
-            Uvs = mesh.uv;
-
-            var meshCollider = GameObject.GetComponent<MeshCollider>();
-            ColliderIsConvex = meshCollider.convex;
-            ColliderIsTrigger = meshCollider.isTrigger;
-
-            var mr = GameObject.GetComponent<MeshRenderer>();
-            Materials = mr.materials.Select(x => (gb_Material)x).ToArray();
+            if (!GameObject.TryGetComponent(out _mf))
+            {
+                _mf = GameObject.AddComponent<MeshFilter>();
+            }
+            if (!GameObject.TryGetComponent(out _mr))
+            {
+                _mr = GameObject.AddComponent<MeshRenderer>();
+            }
+            if (!GameObject.TryGetComponent(out _mc))
+            {
+                _mc = GameObject.AddComponent<MeshCollider>();
+            }
         }
 
-        protected override void OnAdded(gb_Map map)
+        public override void OnPostRender(gb_SceneView sceneView)
         {
-            foreach (var sceneView in GameObject.FindObjectsOfType<gb_SceneView>())
+            var isSelected = gb_InputManager.ActiveObject == GameObject;
+
+            if (!isSelected && sceneView.SceneAngle == gb_SceneViewAngle.ThreeDimensional)
             {
-                sceneView.Draw.Add(new gb_DrawMeshOutline(sceneView, this)
-                {
-                    Duration = float.MaxValue
-                });
+                return;
             }
+
+            var color = isSelected ? Color.green : Color.white;
+            sceneView.Draw.Add(new gb_DrawMeshOutline(sceneView, this)
+            {
+                Color = color
+            });
         }
 
     }

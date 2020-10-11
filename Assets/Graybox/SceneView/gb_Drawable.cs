@@ -15,7 +15,10 @@ namespace Graybox
 
         public void OnPostRender()
         {
-            CreateLineMaterial();
+            if (!_lineMaterial)
+            {
+                CreateLineMaterial();
+            }
 
             if (ScreenSpace)
             {
@@ -38,20 +41,17 @@ namespace Graybox
 
         private void CreateLineMaterial()
         {
-            if (!_lineMaterial)
-            {
-                // Unity has a built-in shader that is useful for drawing
-                // simple colored things.
-                _lineMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
-                _lineMaterial.hideFlags = HideFlags.HideAndDontSave;
-                // Turn on alpha blending
-                _lineMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                _lineMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                // Turn backface culling off
-                _lineMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
-                // Turn off depth writes
-                _lineMaterial.SetInt("_ZWrite", 0);
-            }
+            // Unity has a built-in shader that is useful for drawing
+            // simple colored things.
+            _lineMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
+            _lineMaterial.hideFlags = HideFlags.HideAndDontSave;
+            // Turn on alpha blending
+            _lineMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            _lineMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            // Turn backface culling off
+            _lineMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+            // Turn off depth writes
+            _lineMaterial.SetInt("_ZWrite", 0);
         }
     }
 }

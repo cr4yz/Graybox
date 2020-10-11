@@ -17,8 +17,8 @@ namespace Graybox.Tools
         {
             foreach (var handle in GetComponentsInChildren<gb_GizmoHandles>())
             {
-                handle.OnHandleDown.AddListener(HandleDown);
-                handle.OnHandleUp.AddListener(HandleUp);
+                handle.OnHandleDown.AddListener(() => HandleDown(handle));
+                handle.OnHandleUp.AddListener(() => HandleUp(handle));
                 RegisterHandle(handle);
             }
         }
@@ -30,15 +30,13 @@ namespace Graybox.Tools
 
         protected override void OnUpdate()
         {
-            if (!gb_ToolManager.Instance.SelectedObject)
+            if (!Target)
             {
                 _gizmoObject.SetActive(false);
                 return;
             }
 
             _gizmoObject.SetActive(true);
-
-            transform.position = gb_ToolManager.Instance.SelectedObject.transform.position;
 
             float gizmoScale;
 
@@ -64,13 +62,15 @@ namespace Graybox.Tools
                 OnDeltaUpdate(_activeHandle, newPosition - _handlePosition, worldDelta);
                 _handlePosition = newPosition;
             }
+
+            transform.position = Target.position;
         }
 
         private void HandleDown(gb_ToolHandle handle)
         {
             var gizmoHandle = handle as gb_GizmoHandles;
 
-            _startDist = Vector3.Distance(gb_ToolManager.Instance.SelectedObject.transform.position, gb_InputManager.ActiveSceneView.Camera.transform.position);
+            _startDist = Vector3.Distance(Target.position, gb_InputManager.ActiveSceneView.Camera.transform.position);
             _activeHandle = gizmoHandle;
             _handlePosition = Input.mousePosition;
             _prevWorldPosition = gb_InputManager.Instance.ScreenToWorld(new Vector3(Input.mousePosition.x, Input.mousePosition.y, _startDist));

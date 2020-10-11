@@ -67,7 +67,8 @@ namespace Graybox.Tools
             obj.transform.position = position;
             obj.GetComponent<Renderer>().material = _defaultMaterial;
             obj.AddComponent<MeshCollider>();
-            new gb_Mesh().IntegrateAndAdd(obj, gb_Map.ActiveMap);
+
+            gb_Map.ActiveMap.Create<gb_Mesh>(obj).Save();
         }
 
     }

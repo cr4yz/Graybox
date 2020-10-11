@@ -10,6 +10,14 @@ namespace Graybox.Utility
                               Mathf.Round(vector.y / snapValue) * snapValue,
                               Mathf.Round(vector.z / snapValue) * snapValue);
         }
+
+        public static Vector3 Snap(this Vector3 vector, Vector3 axis, float snapValue)
+        {
+            return new Vector3(axis.x != 0 ? Mathf.Round(vector.x / snapValue) * snapValue : vector.x,
+                              axis.y != 0 ? Mathf.Round(vector.y / snapValue) * snapValue : vector.y,
+                              axis.z != 0 ? Mathf.Round(vector.z / snapValue) * snapValue : vector.z);
+        }
+
         public static Vector3 Absolute(this Vector3 vector)
         {
             return new Vector3(Mathf.Abs(vector.x), Mathf.Abs(vector.y), Mathf.Abs(vector.z));

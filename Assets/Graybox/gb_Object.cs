@@ -12,13 +12,7 @@ namespace Graybox
         public int ObjectId { get; set; }
         [JsonIgnore]
         public GameObject GameObject { get; private set; }
-
-        public void IntegrateAndAdd(GameObject gameObject, gb_Map map)
-        {
-            Integrate(gameObject);
-            map.AddObject(this);
-            OnAdded(map);
-        }
+        public gb_Map Map;
 
         public void Integrate(GameObject gameObject)
         {
@@ -28,18 +22,7 @@ namespace Graybox
                 gbComponent = GameObject.AddComponent<gb_ObjectComponent>();
             }
             gbComponent.Object = this;
-            Save();
             OnIntegrated();
-        }
-
-        public void Load()
-        {
-            GameObject.SetActive(Enabled);
-            GameObject.transform.position = Position;
-            GameObject.transform.eulerAngles = Rotation;
-            GameObject.transform.localScale = Scale;
-            OnLoad();
-            Save();
         }
 
         public void Save() 
@@ -52,10 +35,20 @@ namespace Graybox
             OnSave();
         }
 
+        public void Load()
+        {
+            GameObject.transform.position = Position;
+            GameObject.transform.eulerAngles = Rotation;
+            GameObject.transform.localScale = Scale;
+            GameObject.SetActive(Enabled);
+            OnLoad();
+        }
+
         protected virtual void OnLoad() { }
         protected virtual void OnSave() { }
         protected virtual void OnIntegrated() { }
         protected virtual void OnAdded(gb_Map map) { }
+        public virtual void OnPostRender(gb_SceneView sceneView) { }
     }
 }
 

@@ -11,9 +11,9 @@ namespace Graybox.Tools
         {
             base.OnUpdate();
 
-            if (gb_ToolManager.Instance.SelectedObject)
+            if (Target)
             {
-                transform.rotation = gb_ToolManager.Instance.SelectedObject.transform.rotation;
+                transform.rotation = Target.rotation;
             }
         }
 
@@ -22,7 +22,7 @@ namespace Graybox.Tools
             worldDelta = transform.InverseTransformDirection(worldDelta);
             var dir = Vector3.Scale(handle.Axis, worldDelta);
 
-            gb_ToolManager.Instance.SelectedObject.transform.localScale += dir.normalized * screenDelta.magnitude * Time.deltaTime;
+            Target.localScale += dir.normalized * screenDelta.magnitude * Time.deltaTime;
         }
 
     }

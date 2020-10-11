@@ -1,4 +1,5 @@
 using Graybox.Utility;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.ProBuilder;
 
@@ -12,7 +13,7 @@ namespace Graybox.Tools
 
 		public override GameObject Generate()
         {
-			return ShapeGenerator.GenerateCube(PivotLocation.Center, (Max - Min).Absolute()).gameObject;
+            return ShapeGenerator.GenerateCube(PivotLocation.Center, (Max - Min).Absolute()).gameObject;
 		}
 
     }

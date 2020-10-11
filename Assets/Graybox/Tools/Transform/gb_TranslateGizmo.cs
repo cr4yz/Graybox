@@ -1,4 +1,5 @@
 using Graybox.In;
+using Graybox.Utility;
 using UnityEngine;
 
 namespace Graybox.Tools
@@ -8,9 +9,17 @@ namespace Graybox.Tools
 
         public override string ToolName => "Move";
 
+        private Vector3 _absMovement;
+
+        protected override void OnHandleDown(gb_GizmoHandles handle)
+        {
+            _absMovement = Target.position;
+        }
+
         protected override void OnDeltaUpdate(gb_GizmoHandles handle, Vector2 screenDelta, Vector3 worldDelta)
         {
-            gb_ToolManager.Instance.SelectedObject.transform.position += Vector3.Scale(handle.Axis, worldDelta);
+            _absMovement += Vector3.Scale(handle.Axis, worldDelta);
+            Target.position = _absMovement.Snap(handle.Axis, gb_Settings.Instance.SnapSize);
         }
 
     }

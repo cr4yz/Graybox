@@ -24,7 +24,7 @@ namespace Graybox
 
         protected override void Draw()
         {
-            var cellSize = _sceneView.GridSize * _sceneView.GridScale;
+            var cellSize = gb_Settings.Instance.SnapSize;
             var columns = (int)(GridWorldSize / cellSize);
             var columnsHalf = columns / 2;
             var offset = WorldToScreenPoint(Vector3.one * -columnsHalf * cellSize);

@@ -8,6 +8,7 @@ namespace Graybox
     {
 
         public gb_SceneView SceneView;
+        public bool RenderObjects;
 
         private List<gb_Drawable> _drawables = new List<gb_Drawable>();
         private List<gb_Drawable> _pool = new List<gb_Drawable>();
@@ -28,10 +29,18 @@ namespace Graybox
 
         private void OnPostRender()
         {
-            foreach(var drawable in _drawables)
+            if (RenderObjects)
             {
-                drawable.OnPostRender();
-                drawable.Drawn = true;
+                foreach (var obj in gb_Map.ActiveMap.MapInfo.Objects)
+                {
+                    obj.OnPostRender(SceneView);
+                }
+            }
+
+            for (int i = _drawables.Count - 1; i >= 0; i--)
+            {
+                _drawables[i].OnPostRender();
+                _drawables[i].Drawn = true;
             }
         }
 
@@ -55,6 +64,17 @@ namespace Graybox
             rect.Filled = filled;
             rect.Duration = duration;
             _drawables.Add(rect);
+        }
+
+        public void Draw2dLine(Vector2 a, Vector2 b, float width, Color color, float duration = 0)
+        {
+            var line = GetDrawable<gb_Draw2dLine>();
+            line.Color = color;
+            line.Duration = duration;
+            line.PointA = a;
+            line.PointB = b;
+            line.Width = width;
+            _drawables.Add(line);
         }
 
         public gb_SceneLabel CreateLabel(string text, Vector3 worldPosition, Vector2 screenOffset = default)

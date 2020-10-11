@@ -28,11 +28,10 @@ namespace Graybox
         private Vector3[] _worldCorners = new Vector3[4];
         private gb_SceneCamera _flyCamera;
 
+        public bool IsFocused { get; private set; }
         public Camera Camera { get; private set; }
         public RectTransform RectTransform { get; private set; }
         public gb_SceneDrawManager Draw { get; private set; }
-        public float GridSize { get; set; } = 32;
-        public float GridScale => gb_Settings.Instance.UnitScale;
 
         private GameObject _rootObject;
         private gb_WireframeCamera _wireframe;
@@ -40,14 +39,13 @@ namespace Graybox
         private Camera _gridCamera;
         private Camera _gizmoCamera;
 
-        //private GameObject _gridObject;
         private const float _orthographicCameraDistance = -50000;
 
         private void Awake()
         {
             RectTransform = GetComponent<RectTransform>();
 
-            _renderTexture = new RenderTexture(1280, 720, 1);
+            _renderTexture = new RenderTexture(1280, 720, 0);
             _renderTexture.antiAliasing = 8;
             _renderTexture.filterMode = FilterMode.Trilinear;
             GetComponent<RawImage>().texture = _renderTexture;
@@ -58,11 +56,11 @@ namespace Graybox
             cameraObj.transform.SetParent(_rootObject.transform, true);
             Draw = cameraObj.AddComponent<gb_SceneDrawManager>();
             Draw.SceneView = this;
+            Draw.RenderObjects = true;
             Camera = cameraObj.AddComponent<Camera>();
             Camera.forceIntoRenderTexture = true;
             Camera.targetTexture = _renderTexture;
             Camera.cullingMask = 0;
-            //Camera.cullingMask &= ~LayerMask.GetMask("Gizmos", "Grids");
             Camera.orthographic = true;
             Camera.orthographicSize = 5;
             Camera.clearFlags = CameraClearFlags.Depth;
@@ -84,9 +82,7 @@ namespace Graybox
 
             _gizmoCamera = CreateCamera(cameraObj.transform, "Gizmos", 2, LayerMask.GetMask("Gizmos"), CameraClearFlags.Nothing, Camera);
             _gizmoCamera.gameObject.SetActive(false);
-            _gizmoCamera.farClipPlane = Mathf.Abs(_orthographicCameraDistance * 2);
-            //_gridCamera.backgroundColor = Color.black;
-            CreateGrid();
+            _gizmoCamera.farClipPlane = Mathf.Max(Mathf.Abs(_orthographicCameraDistance) * 2, 1000);
 
             SetWireframeColor(Color.green);
             SetWireframeBackColor(Color.yellow);
@@ -124,6 +120,11 @@ namespace Graybox
 
         private void Update()
         {
+            if(_wantsFocus && !IsFocused)
+            {
+                TrySetActive();
+            }
+
             if (_currentAngle != SceneAngle)
             {
                 SetAngle(SceneAngle);
@@ -192,20 +193,6 @@ namespace Graybox
             return camera;
         }
 
-        private void CreateGrid()
-        {
-            //var gridObjScale = 2000f;
-            //var gridSpacing = 1f / gridObjScale;
-            //_gridObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            //_gridObject.layer = 7;
-            //_gridObject.transform.SetParent(_rootObject.transform);
-            //_gridObject.transform.position = Vector3.zero;
-            //_gridObject.transform.localScale = new Vector3(gridObjScale, 1, gridObjScale);
-            //_gridMaterial = new Material(Shader.Find("Graybox/Grid"));
-            //_gridMaterial.SetVector("_GridSpacing", Vector4.one * gridSpacing);
-            //_gridObject.GetComponent<Renderer>().material = _gridMaterial;
-        }
-
         private void SetAngle(gb_SceneViewAngle angle)
         {
             if(angle == gb_SceneViewAngle.ThreeDimensional)
@@ -213,16 +200,12 @@ namespace Graybox
                 Camera.orthographic = false;
                 Camera.clearFlags = CameraClearFlags.Skybox;
                 Camera.cullingMask = -1 & ~LayerMask.GetMask("Gizmos", "Grids");
-                //_gridCamera.gameObject.SetActive(false);
-                //_gridObject.SetActive(false);
                 _flyCamera.lockRotation = false;
                 _flyCamera.lockWasd = false;
                 _wireframe.enableWireframe = false;
             }
             else
             {
-                //_gridObject.SetActive(true);
-                //_gridCamera.gameObject.SetActive(true);
                 _flyCamera.lockRotation = true;
                 _flyCamera.lockWasd = true;
                 _wireframe.enableWireframe = true;
@@ -236,34 +219,48 @@ namespace Graybox
                     case gb_SceneViewAngle.Front:
                         _rootObject.transform.eulerAngles = new Vector3(0, 0, 0);
                         _rootObject.transform.position = new Vector3(0, 0, 0);
-                        //_gridObject.transform.localEulerAngles = new Vector3(-90, 0, 0);
                         break;
                     case gb_SceneViewAngle.Side:
                         _rootObject.transform.eulerAngles = new Vector3(0, 90, 0);
                         _rootObject.transform.position = new Vector3(0, 0, 0);
-                        //_gridObject.transform.localEulerAngles = new Vector3(0, -90, 90);
                         break;
                     case gb_SceneViewAngle.Top:
                         _rootObject.transform.eulerAngles = new Vector3(90, 0, 0);
                         _rootObject.transform.position = new Vector3(0, 0, 0);
-                        //_gridObject.transform.localEulerAngles = new Vector3(-90, 0, 0);
                         break;
                 }
             }
             _currentAngle = angle;
         }
 
-        void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
+        private bool _wantsFocus;
+        private void TrySetActive()
         {
+            if (gb_InputManager.IsDragging)
+            {
+                return;
+            }
+            IsFocused = true;
             _flyCamera.enabled = true;
             _gizmoCamera.gameObject.SetActive(true);
+            if (gb_InputManager.ActiveSceneView && gb_InputManager.ActiveSceneView != this)
+            {
+                gb_InputManager.ActiveSceneView._gizmoCamera.gameObject.SetActive(false);
+                gb_InputManager.ActiveSceneView._flyCamera.enabled = false;
+                gb_InputManager.ActiveSceneView.IsFocused = false;
+            }
             gb_InputManager.ActiveSceneView = this;
+        }
+
+        void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
+        {
+            _wantsFocus = true;
+            TrySetActive();
         }
 
         void IPointerExitHandler.OnPointerExit(PointerEventData eventData)
         {
-            _gizmoCamera.gameObject.SetActive(false);
-            _flyCamera.enabled = false;
+            _wantsFocus = false;
         }
 
         private void UpdateAspectRatio()
@@ -281,9 +278,9 @@ namespace Graybox
             if (gb_InputManager.ActiveSceneView == this)
             {
                 if (gb_Binds.JustDown(gb_Bind.Focus)
-                    && gb_ToolManager.Instance.SelectedObject)
+                    && gb_InputManager.ActiveObject)
                 {
-                    Focus(gb_ToolManager.Instance.SelectedObject.transform);
+                    Focus(gb_InputManager.ActiveObject.transform);
                 }
             }
         }
@@ -297,18 +294,6 @@ namespace Graybox
 
             if (Camera.orthographic)
             {
-                if (gb_Binds.JustDown(gb_Bind.IncreaseGrid))
-                {
-                    GridSize /= 2f;
-                    GridSize = Mathf.Max(GridSize, 1);
-                }
-
-                if (gb_Binds.JustDown(gb_Bind.ReduceGrid))
-                {
-                    GridSize *= 2f;
-                    GridSize = Mathf.Min(GridSize, 512);
-                }
-
                 var scrollOrthoDelta = Mathf.Lerp(1, 100f, Camera.orthographicSize / 1000f);
 
                 if (Input.mouseScrollDelta.y > 0)
@@ -335,6 +320,11 @@ namespace Graybox
 
         /* AHHHHHHHHHHHHHH */
 
+        public Ray SceneToRay(Vector3 scenePos)
+        {
+            return Camera.ScreenPointToRay(scenePos);
+        }
+
         public Ray ScreenToRay(Vector3 screenPos)
         {
             RectTransformUtility.ScreenPointToLocalPointInRectangle(RectTransform, screenPos, gb_InputManager.MainCamera, out Vector2 localPoint);
@@ -347,13 +337,22 @@ namespace Graybox
             RectTransformUtility.ScreenPointToLocalPointInRectangle(RectTransform, screenPos, gb_InputManager.MainCamera, out Vector2 localPoint);
             var normalizedPoint = Rect.PointToNormalized(RectTransform.rect, localPoint);
             var point = new Vector3(normalizedPoint.x, normalizedPoint.y, screenPos.z);
-            var worldPoint = Camera.ViewportToWorldPoint(point);
-            return worldPoint - Camera.transform.position;
+            var result = Camera.ViewportToWorldPoint(point);
+            if(SceneAngle != gb_SceneViewAngle.ThreeDimensional)
+            {
+                result -= Camera.transform.TransformDirection(0, 0, _orthographicCameraDistance);
+            }
+            return result;
         }
 
         public Vector3 SceneToWorld(Vector3 screenPos)
         {
-            return Camera.ScreenToWorldPoint(screenPos) - Camera.transform.position;
+            var result = Camera.ScreenToWorldPoint(screenPos);
+            if (SceneAngle != gb_SceneViewAngle.ThreeDimensional)
+            {
+                result -= Camera.transform.TransformDirection(0, 0, _orthographicCameraDistance);
+            }
+            return result;
         }
 
         public Vector2 ScreenToScene(Vector3 screenPos)

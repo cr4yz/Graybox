@@ -1,9 +1,14 @@
 
+using UnityEngine;
+
 namespace Graybox
 {
     public class gb_Settings : gb_Singleton<gb_Settings>
     {
         public float UnitScale => .0254f;
+        public float GridSize { get; set; } = 32;
+        public float SnapSize => UnitScale * GridSize;
+        public bool SnapToGrid => true;
 
         public float ConvertTo(float unityUnits)
         {
@@ -13,6 +18,21 @@ namespace Graybox
         public float ConvertFrom(float scaledUnits)
         {
             return scaledUnits * UnitScale;
+        }
+
+        private void Update()
+        {
+            if (gb_Binds.JustDown(gb_Bind.IncreaseGrid))
+            {
+                GridSize /= 2f;
+                GridSize = Mathf.Max(GridSize, 1);
+            }
+
+            if (gb_Binds.JustDown(gb_Bind.ReduceGrid))
+            {
+                GridSize *= 2f;
+                GridSize = Mathf.Min(GridSize, 512);
+            }
         }
 
     }

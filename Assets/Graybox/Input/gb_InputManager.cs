@@ -2,6 +2,8 @@ using Graybox.Gui;
 using Graybox.Tools;
 using Graybox.Utility;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -20,14 +22,13 @@ namespace Graybox.In
         public static List<RaycastHit> HitsUnderCursor { get; } = new List<RaycastHit>();
         public static List<GameObject> SelectedObjects { get; } = new List<GameObject>();
         public static GameObject ActiveObject => SelectedObjects.Count > 0 ? SelectedObjects[0] : null;
+        public static bool IsDragging { get; private set; }
 
         private RaycastHit[] _hitCache = new RaycastHit[256];
 
         private Vector3 _dragBegin;
         private Rect _dragRect;
-        private bool _dragging;
-        private gb_SceneLabel _xLabel;
-        private gb_SceneLabel _yLabel;
+        private gb_SceneLabel _szLabel;
 
         private void Awake()
         {
@@ -36,15 +37,46 @@ namespace Graybox.In
 
         private void Update()
         {
-            var ray = ScreenToRay(Input.mousePosition);
-            var hits = Physics.RaycastNonAlloc(ray, _hitCache);
             HitsUnderCursor.Clear();
-            for (int i = 0; i < hits; i++) 
+
+            if (ActiveSceneView.IsFocused)
             {
-                HitsUnderCursor.Add(_hitCache[i]);
+                var ray = ScreenToRay(Input.mousePosition);
+                var hits = Physics.RaycastNonAlloc(ray, _hitCache);
+                for (int i = 0; i < hits; i++)
+                {
+                    HitsUnderCursor.Add(_hitCache[i]);
+                }
+                UpdateMouseDrag();
+            }
+        }
+
+        private void Pick()
+        {
+            if (gb_ToolManager.Instance.ToolHasFocus())
+            {
+                return;
             }
 
-            UpdateMouseDrag();
+            var potentialObjects = new List<gb_ObjectComponent>();
+            SelectedObjects.Clear();
+
+            foreach (var hit in HitsUnderCursor)
+            {
+                if (hit.transform.GetComponentInParent<gb_GizmoTool>())
+                {
+                    return;
+                }
+                if (hit.transform.TryGetComponent(out gb_ObjectComponent objComponent))
+                {
+                    potentialObjects.Add(objComponent);
+                }
+            }
+
+            if (potentialObjects.Count > 0)
+            {
+                SelectedObjects.AddRange(potentialObjects.Select(x => x.gameObject));
+            }
         }
 
         private void UpdateMouseDrag()
@@ -59,16 +91,19 @@ namespace Graybox.In
 
             if (gb_Binds.JustUp(gb_Bind.Select))
             {
-                if (_dragging)
+                if (IsDragging)
                 {
                     OnDragEnd?.Invoke(_dragRect);
                     PerformBoxSelect(_dragRect);
-                    _dragging = false;
-                    if (_xLabel)
+                    IsDragging = false;
+                    if (_szLabel)
                     {
-                        _xLabel.Destroy();
-                        _yLabel.Destroy();
+                        _szLabel.Destroy();
                     }
+                }
+                else
+                {
+                    Pick();
                 }
             }
 
@@ -83,26 +118,26 @@ namespace Graybox.In
                 if (Vector2.Distance(finalDragStart, finalDragEnd) > 10
                     && !gb_ToolManager.Instance.ToolHasFocus())
                 {
-                    _dragging = true;
+                    IsDragging = true;
                     _dragRect = new Rect(finalDragStart, finalDragEnd - finalDragStart);
                     ActiveSceneView.Draw.Draw2dRect(_dragRect, 2f, 0, false, Color.yellow);
                     OnDrag?.Invoke(_dragRect);
 
                     if (!is3d)
                     {
-                        if (!_xLabel)
+                        if (!_szLabel)
                         {
-                            CreateDragLabels();
+                            _szLabel = ActiveSceneView.Draw.CreateLabel("...", Vector3.zero, new Vector2(0, -30));
                         }
 
                         var wsMin = SceneToWorld(_dragRect.min);
                         var wsMax = SceneToWorld(_dragRect.max);
-                        var szX = Mathf.Abs(wsMax.x - wsMin.x);
-                        var szY = Mathf.Abs(wsMax.y - wsMin.y);
-                        _xLabel.WorldPosition = new Vector3((wsMin.x + wsMax.x) / 2, wsMax.y, 0);
-                        _yLabel.WorldPosition = new Vector3(wsMin.x, (wsMin.y + wsMax.y) / 2, 0);
-                        _xLabel.SetText(gb_Settings.Instance.ConvertTo(szX).ToString(".00"));
-                        _yLabel.SetText(gb_Settings.Instance.ConvertTo(szY).ToString(".00"));
+                        var szX = gb_Settings.Instance.ConvertTo(Mathf.Abs(wsMax.x - wsMin.x));
+                        var szY = gb_Settings.Instance.ConvertTo(Mathf.Abs(wsMax.y - wsMin.y));
+                        var szZ = gb_Settings.Instance.ConvertTo(Mathf.Abs(wsMax.z - wsMin.z));
+                        var sz = new Vector3(szX, szY, szZ);
+                        _szLabel.WorldPosition = wsMin;
+                        _szLabel.SetText(sz.ToString());
                     }
                 }
             }
@@ -111,16 +146,10 @@ namespace Graybox.In
             {
                 if (snapToGrid)
                 {
-                    point = point.Snap(ActiveSceneView.GridSize * ActiveSceneView.GridScale);
+                    point = point.Snap(gb_Settings.Instance.SnapSize);
                 }
                 return WorldToScreen(point);
             }
-        }
-
-        private void CreateDragLabels()
-        {
-            _xLabel = ActiveSceneView.Draw.CreateLabel("X Axis", Vector3.zero, new Vector2(0, -30));
-            _yLabel = ActiveSceneView.Draw.CreateLabel("Y Axis", Vector3.zero, new Vector2(-30, 0));
         }
 
         private void PerformBoxSelect(Rect rect)
