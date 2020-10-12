@@ -49,6 +49,11 @@ namespace Graybox
             _drawables.Add(drawable);
         }
 
+        public void DrawQuad(Rect rect, Color color)
+        {
+
+        }
+
         public void Draw2dRect(Rect rect, float borderWidth, float duration, bool filled, Color color)
         {
             Draw2dRect(rect.min, rect.max, borderWidth, duration, filled, color);
