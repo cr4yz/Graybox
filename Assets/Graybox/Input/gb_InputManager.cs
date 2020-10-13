@@ -53,11 +53,6 @@ namespace Graybox.In
 
         private void Pick()
         {
-            if (gb_ToolManager.Instance.ToolHasFocus())
-            {
-                return;
-            }
-
             var potentialObjects = new List<gb_ObjectComponent>();
             SelectedObjects.Clear();
 
@@ -77,6 +72,19 @@ namespace Graybox.In
             {
                 SelectedObjects.AddRange(potentialObjects.Select(x => x.gameObject));
             }
+        }
+
+        public bool CanPick()
+        {
+            if (gb_ToolManager.Instance.ToolHasFocus())
+            {
+                return false;
+            }
+            if(ActiveSceneView && !ActiveSceneView.IsHovered)
+            {
+                return false;
+            }
+            return true;
         }
 
         private void UpdateMouseDrag()
@@ -103,7 +111,10 @@ namespace Graybox.In
                 }
                 else
                 {
-                    Pick();
+                    if (CanPick())
+                    {
+                        Pick();
+                    }
                 }
             }
 

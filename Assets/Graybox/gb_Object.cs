@@ -12,6 +12,7 @@ namespace Graybox
         public int ObjectId { get; set; }
         [JsonIgnore]
         public GameObject GameObject { get; private set; }
+        [JsonIgnore]
         public gb_Map Map;
 
         public void Integrate(GameObject gameObject)

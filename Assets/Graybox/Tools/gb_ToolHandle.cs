@@ -35,6 +35,17 @@ namespace Graybox.Tools
             }
         }
 
+        private void OnDisable()
+        {
+            if (IsMouseDown)
+            {
+                _activeHandle = null;
+                OnHandleUp?.Invoke();
+            }
+            IsMouseDown = false;
+            IsHovered = false;
+        }
+
         protected virtual void Update()
         {
             var shouldBeHighlighted = (IsMouseDown || IsHovered) && (_activeHandle == this || _activeHandle == null);

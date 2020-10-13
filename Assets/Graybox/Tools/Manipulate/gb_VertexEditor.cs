@@ -1,6 +1,8 @@
+using Graybox.Utility;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.ProBuilder;
 
 namespace Graybox.Tools
 {
@@ -13,7 +15,7 @@ namespace Graybox.Tools
         private GameObject _handlePrefab;
 
         private GameObject _handleRoot;
-        private GameObject _pivotObject;
+        private gb_TransformEvent _pivotObject;
         private bool _handlesExist;
         private gb_Tool _transformTool;
 
@@ -23,7 +25,7 @@ namespace Graybox.Tools
         {
             _handleRoot = new GameObject("Vertex Editor Handles");
             _handleRoot.transform.SetParent(transform, true);
-            _pivotObject = new GameObject("Vertex Pivot");
+            _pivotObject = new GameObject("Pivot Object").AddComponent<gb_TransformEvent>();
             _pivotObject.transform.SetParent(transform, true);
             _transformTool = GameObject.FindObjectOfType<gb_TranslateGizmo>(true);
         }

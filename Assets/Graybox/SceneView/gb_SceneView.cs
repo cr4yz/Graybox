@@ -28,6 +28,7 @@ namespace Graybox
         private Vector3[] _worldCorners = new Vector3[4];
         private gb_SceneCamera _flyCamera;
 
+        public bool IsHovered { get; private set; }
         public bool IsFocused { get; private set; }
         public Camera Camera { get; private set; }
         public RectTransform RectTransform { get; private set; }
@@ -100,6 +101,9 @@ namespace Graybox
 
         private void OnDisable()
         {
+            IsHovered = false;
+            _wantsFocus = false;
+
             if (Camera)
             {
                 Camera.gameObject.SetActive(false);
@@ -254,12 +258,14 @@ namespace Graybox
 
         void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
         {
+            IsHovered = true;
             _wantsFocus = true;
             TrySetActive();
         }
 
         void IPointerExitHandler.OnPointerExit(PointerEventData eventData)
         {
+            IsHovered = false;
             _wantsFocus = false;
         }
 

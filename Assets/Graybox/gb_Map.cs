@@ -7,7 +7,6 @@ namespace Graybox
 {
     public class gb_Map : MonoBehaviour
     {
-
         public static gb_Map ActiveMap;
 
         static JsonSerializerSettings _serializerSettings

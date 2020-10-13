@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Graybox
 {
-    public class gb_DrawQuad : gb_Drawable
+    public class gb_Draw2dQuad : gb_Drawable
     {
         protected override int DrawMode => GL.QUADS;
         protected override bool ScreenSpace => true;
@@ -12,16 +12,16 @@ namespace Graybox
         private Rect _rect;
         private gb_SceneView _sceneView;
 
-        public gb_DrawQuad(Rect worldSpaceRect, gb_SceneView sceneView)
+        public gb_Draw2dQuad(Rect rect, gb_SceneView sceneView)
         {
-            _rect = worldSpaceRect;
             _sceneView = sceneView;
+            _rect = rect;
         }
 
         protected override void Draw()
         {
-            var min = _sceneView.WorldToScreen(_rect.min);
-            var max = _sceneView.WorldToScreen(_rect.max);
+            var min = _rect.min;
+            var max = _rect.max;
             GL.Vertex3(min.x, min.y, 0);
             GL.Vertex3(min.x, max.y, 0);
             GL.Vertex3(max.x, max.y, 0);

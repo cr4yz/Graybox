@@ -18,10 +18,10 @@ namespace Graybox.Utility
         {
             _prevPosition = transform.position;
             _prevScale = transform.localScale;
-            _prevRotation = Quaternion.identity;
+            _prevRotation = transform.rotation;
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             if(_prevPosition != transform.position)
             {
@@ -35,11 +35,11 @@ namespace Graybox.Utility
                 _prevScale = transform.localScale;
                 OnScale?.Invoke(delta);
             }
-            if(_prevRotation != transform.rotation)
+            if(Quaternion.Angle(_prevRotation, transform.rotation) > 1f)
             {
-                var delta = Quaternion.Inverse(_prevRotation) * transform.rotation;
+                var deltaRotation = transform.rotation * Quaternion.Inverse(_prevRotation);
                 _prevRotation = transform.rotation;
-                OnRotate?.Invoke(delta);
+                OnRotate?.Invoke(deltaRotation);
             }
         }
 

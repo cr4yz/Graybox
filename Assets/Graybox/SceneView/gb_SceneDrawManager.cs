@@ -49,9 +49,13 @@ namespace Graybox
             _drawables.Add(drawable);
         }
 
-        public void DrawQuad(Rect rect, Color color)
+        public void Draw2dQuad(Rect rect, Color color)
         {
-
+            var quad = new gb_Draw2dQuad(rect, SceneView)
+            {
+                Color = color
+            };
+            _drawables.Add(quad);
         }
 
         public void Draw2dRect(Rect rect, float borderWidth, float duration, bool filled, Color color)
