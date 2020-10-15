@@ -6,6 +6,9 @@ namespace Graybox.Tools
 {
     public abstract class gb_Tool : MonoBehaviour
     {
+        [SerializeField]
+        private GameObject[] _inScenePrefabs;
+
         public virtual bool DontDrawDragRect { get; }
         public abstract string ToolName { get; }
         public bool HasFocus
@@ -37,6 +40,7 @@ namespace Graybox.Tools
         [HideInInspector]
         public Transform TargetOverride;
 
+        private List<GameObject> _inSceneClones = new List<GameObject>();
         private List<gb_ToolHandle> _handles = new List<gb_ToolHandle>();
         private Transform _lastTarget;
 
@@ -61,6 +65,12 @@ namespace Graybox.Tools
             gb_InputManager.OnDragEnd.AddListener(OnDragEnd);
             gb_InputManager.OnBoxSelect.AddListener(OnBoxSelect);
 
+            foreach(var prefab in _inScenePrefabs)
+            {
+                var clone = GameObject.Instantiate(prefab);
+                _inSceneClones.Add(clone);
+            }
+
             OnEnabled();
         }
 
@@ -71,6 +81,12 @@ namespace Graybox.Tools
             gb_InputManager.OnDrag.RemoveListener(OnDrag);
             gb_InputManager.OnDragEnd.RemoveListener(OnDragEnd);
             gb_InputManager.OnBoxSelect.RemoveListener(OnBoxSelect);
+
+            foreach(var inSceneClone in _inSceneClones)
+            {
+                GameObject.Destroy(inSceneClone);
+            }
+            _inSceneClones.Clear();
 
             OnDisabled();
         }
@@ -88,6 +104,20 @@ namespace Graybox.Tools
                 if (!_handles[i])
                 {
                     _handles.RemoveAt(i);
+                }
+            }
+
+            if (gb_InputManager.ActiveSceneView)
+            {
+                foreach(var clone in _inSceneClones)
+                {
+                    clone.transform.SetParent(gb_InputManager.ActiveSceneView.InScene.transform, true);
+                    var rt = clone.GetComponent<RectTransform>();
+                    rt.localScale = Vector3.one;
+                    rt.localRotation = Quaternion.identity;
+                    rt.localPosition = Vector3.zero;
+                    rt.anchoredPosition = Vector3.zero;
+                    rt.sizeDelta = Vector3.zero;
                 }
             }
 

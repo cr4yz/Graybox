@@ -3,6 +3,7 @@ using Graybox.Tools;
 using Newtonsoft.Json;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.ProBuilder;
 
 namespace Graybox
 {
@@ -84,8 +85,8 @@ namespace Graybox
                 return;
             }
 
-            var color = isSelected ? Color.green : Color.white;
-            sceneView.Draw.Add(new gb_DrawMeshOutline(sceneView, this)
+            var color = isSelected ? Color.yellow : Color.white;
+            sceneView.Draw.Add(new gb_DrawMeshOutline(sceneView, GameObject.GetComponent<ProBuilderMesh>())
             {
                 Color = color
             });

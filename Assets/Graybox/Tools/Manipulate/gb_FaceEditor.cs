@@ -16,6 +16,7 @@ namespace Graybox.Tools
         private gb_TransformEvent _pivotObject;
         private gb_Tool _transformTool;
         private Quaternion _previousDelta = Quaternion.identity;
+        private Face _hoveredFace;
 
         protected override void OnAwake()
         {
@@ -30,6 +31,7 @@ namespace Graybox.Tools
         {
             _transformTool.gameObject.SetActive(false);
             _selectedFaces.Clear();
+            _hoveredFace = null;
         }
 
         private void OnMove(Vector3 delta)
@@ -118,8 +120,6 @@ namespace Graybox.Tools
             }
         }
 
-        private Face _hoveredFace;
-
         protected override void OnUpdate()
         {
             if (!Target)
@@ -185,12 +185,12 @@ namespace Graybox.Tools
 
             foreach (var face in _selectedFaces)
             {
-                DrawFace(verts, face, Color.green);
+                DrawFace(verts, face, gb_Settings.Instance.ElementSelectedColor);
             }
 
             if(_hoveredFace != null && !_selectedFaces.Contains(_hoveredFace))
             {
-                DrawFace(verts, _hoveredFace, Color.red);
+                DrawFace(verts, _hoveredFace, gb_Settings.Instance.ElementHoverColor);
             }
         }
 

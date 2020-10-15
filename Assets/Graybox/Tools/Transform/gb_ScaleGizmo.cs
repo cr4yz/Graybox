@@ -1,3 +1,4 @@
+using Graybox.Utility;
 using UnityEngine;
 
 namespace Graybox.Tools
@@ -6,6 +7,8 @@ namespace Graybox.Tools
     {
 
         public override string ToolName => "Scale";
+
+        private Vector3 _absScale;
 
         protected override void OnUpdate()
         {
@@ -17,12 +20,18 @@ namespace Graybox.Tools
             }
         }
 
+        protected override void OnHandleDown(gb_GizmoHandles handle)
+        {
+            base.OnHandleDown(handle);
+
+            _absScale = Target.localScale;
+        }
+
         protected override void OnDeltaUpdate(gb_GizmoHandles handle, Vector2 screenDelta, Vector3 worldDelta)
         {
-            worldDelta = transform.InverseTransformDirection(worldDelta);
-            var dir = Vector3.Scale(handle.Axis, worldDelta);
-
-            Target.localScale += dir.normalized * screenDelta.magnitude * Time.deltaTime;
+            _absScale += Vector3.Scale(handle.Axis, worldDelta);
+            //Target.localScale = _absScale;
+            Target.localScale = _absScale.Snap(handle.Axis, gb_Settings.Instance.ScaleSnapSize);
         }
 
     }

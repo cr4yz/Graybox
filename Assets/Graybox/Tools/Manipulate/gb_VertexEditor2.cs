@@ -10,11 +10,12 @@ namespace Graybox.Tools
     public class gb_VertexEditor2 : gb_Tool
     {
         public override string ToolName => "Vertex Editor";
+        //public override bool HasFocus => _hoveredVert != -1 ? true : base.HasFocus;
 
         private gb_TransformEvent _pivotObject;
         private gb_Tool _transformTool;
         private List<int> _selectedVerts = new List<int>();
-        private List<int> _hoveredVerts = new List<int>();
+        private int _hoveredVert = -1;
 
         protected override void OnAwake()
         {
@@ -26,7 +27,10 @@ namespace Graybox.Tools
 
         protected override void OnDisabled()
         {
+            _transformTool.gameObject.SetActive(false);
             _transformTool.TargetOverride = null;
+            _selectedVerts.Clear();
+            _hoveredVert = -1;
         }
 
         private void OnMove(Vector3 delta)
@@ -61,28 +65,33 @@ namespace Graybox.Tools
             {
                 return;
             }
-            var scenePos = gb_InputManager.ActiveSceneView.ScreenToScene(Input.mousePosition);
-            var min = scenePos - new Vector2(32, 32);
-            var rect = new Rect(min, new Vector2(64, 64)).SceneToGui(gb_InputManager.ActiveSceneView);
-            _hoveredVerts = GetSharedVerts(Target.GetComponent<ProBuilderMesh>(), rect);
 
-            if (gb_Binds.JustDown(gb_Bind.Select) &&
-                gb_InputManager.Instance.CanPick())
+            var scenePos = gb_InputManager.ActiveSceneView.ScreenToScene(Input.mousePosition);
+            var min = scenePos - new Vector2(8, 8);
+            var rect = new Rect(min, new Vector2(16, 16)).SceneToGui(gb_InputManager.ActiveSceneView);
+            var hoveredVerts = GetSharedVerts(Target.GetComponent<ProBuilderMesh>(), rect);
+            _hoveredVert = hoveredVerts.Count > 0 ? hoveredVerts[0] : -1;
+
+            if (gb_Binds.JustUp(gb_Bind.Select) 
+                && gb_InputManager.Instance.CanPick(this)
+                && _hoveredVert != -1)
             {
-                DoSelect(_hoveredVerts, true);
+                DoSelect(new int[] { _hoveredVert }, true);
             }
 
             var pbm = Target.GetComponent<ProBuilderMesh>();
 
             for (int i = 0; i < pbm.sharedVertices.Count; i++)
             {
-                var color = _hoveredVerts.Contains(i)
-                    ? Color.yellow
-                    : Color.red;
-                if (_selectedVerts.Contains(i))
+                var color = _selectedVerts.Contains(i) 
+                    ? gb_Settings.Instance.ElementSelectedColor
+                    : gb_Settings.Instance.ElementColor;
+
+                if(i == _hoveredVert)
                 {
-                    color = Color.green;
+                    color = gb_Settings.Instance.ElementHoverColor;
                 }
+
                 var pos = gb_InputManager.ActiveSceneView.WorldToScreen(GetSharedVertexPosition(i));
                 pos -= new Vector2(8, 8);
                 var sz = new Vector2(16, 16);

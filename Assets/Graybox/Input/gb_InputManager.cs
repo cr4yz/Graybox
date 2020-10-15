@@ -23,12 +23,15 @@ namespace Graybox.In
         public static List<GameObject> SelectedObjects { get; } = new List<GameObject>();
         public static GameObject ActiveObject => SelectedObjects.Count > 0 ? SelectedObjects[0] : null;
         public static bool IsDragging { get; private set; }
+        public static bool ToolHasFocus { get; private set; }
 
         private RaycastHit[] _hitCache = new RaycastHit[256];
 
         private Vector3 _dragBegin;
         private Rect _dragRect;
         private gb_SceneLabel _szLabel;
+        private bool _selectRequiresRelease;
+        private int _pickFrameBuffer;
 
         private void Awake()
         {
@@ -37,6 +40,9 @@ namespace Graybox.In
 
         private void Update()
         {
+            _pickFrameBuffer--;
+
+            ToolHasFocus = gb_ToolManager.Instance.ToolHasFocus();
             HitsUnderCursor.Clear();
 
             if (ActiveSceneView.IsFocused)
@@ -74,13 +80,21 @@ namespace Graybox.In
             }
         }
 
-        public bool CanPick()
+        public bool CanPick(gb_Tool allowFocus = null)
         {
-            if (gb_ToolManager.Instance.ToolHasFocus())
+            foreach(var tool in gb_ToolManager.Instance.Tools)
             {
-                return false;
+                if (tool.HasFocus)
+                {
+                    if(allowFocus == tool)
+                    {
+                        continue;
+                    }
+                    return false;
+                }
             }
-            if(ActiveSceneView && !ActiveSceneView.IsHovered)
+            if ((ActiveSceneView && !ActiveSceneView.IsHovered) 
+                || _pickFrameBuffer > 0)
             {
                 return false;
             }
@@ -89,6 +103,26 @@ namespace Graybox.In
 
         private void UpdateMouseDrag()
         {
+            if (IsDragging && gb_Binds.JustDown(gb_Bind.Cancel))
+            {
+                _selectRequiresRelease = true;
+                IsDragging = false;
+                if (_szLabel)
+                {
+                    _szLabel.Destroy();
+                }
+            }
+
+            if (_selectRequiresRelease)
+            {
+                if (gb_Binds.JustUp(gb_Bind.Select))
+                {
+                    _pickFrameBuffer = 1;
+                    _selectRequiresRelease = false;
+                }
+                return;
+            }
+
             var is3d = ActiveSceneView.SceneAngle == gb_SceneViewAngle.ThreeDimensional;
             var mpos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 1000);
 
@@ -104,6 +138,8 @@ namespace Graybox.In
                     OnDragEnd?.Invoke(_dragRect);
                     PerformBoxSelect(_dragRect);
                     IsDragging = false;
+                    _pickFrameBuffer = 1;
+
                     if (_szLabel)
                     {
                         _szLabel.Destroy();
@@ -127,7 +163,7 @@ namespace Graybox.In
                 finalDragEnd = WorldToScene(wsDragEnd, !is3d);
 
                 if (Vector2.Distance(finalDragStart, finalDragEnd) > 10
-                    && !gb_ToolManager.Instance.ToolHasFocus())
+                    && !ToolHasFocus)
                 {
                     IsDragging = true;
                     _dragRect = new Rect(finalDragStart, finalDragEnd - finalDragStart);

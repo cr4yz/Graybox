@@ -33,10 +33,9 @@ namespace Graybox
         public Camera Camera { get; private set; }
         public RectTransform RectTransform { get; private set; }
         public gb_SceneDrawManager Draw { get; private set; }
+        public GameObject InScene { get; private set; }
 
         private GameObject _rootObject;
-        private gb_WireframeCamera _wireframe;
-
         private Camera _gridCamera;
         private Camera _gizmoCamera;
 
@@ -61,17 +60,27 @@ namespace Graybox
             Camera = cameraObj.AddComponent<Camera>();
             Camera.forceIntoRenderTexture = true;
             Camera.targetTexture = _renderTexture;
-            Camera.cullingMask = 0;
+            Camera.cullingMask = LayerMask.NameToLayer("UI");
             Camera.orthographic = true;
             Camera.orthographicSize = 5;
             Camera.clearFlags = CameraClearFlags.Depth;
             Camera.depth = 1;
 
+            InScene = new GameObject("InScene");
+            InScene.transform.SetParent(_rootObject.transform, true);
+            var inSceneCanvas = InScene.AddComponent<Canvas>();
+            inSceneCanvas.worldCamera = Camera;
+            inSceneCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            inSceneCanvas.planeDistance = 1;
+            var canvasScaler = InScene.AddComponent<CanvasScaler>();
+            canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            canvasScaler.referenceResolution = new Vector2(1280, 720);
+            InScene.AddComponent<gb_SceneViewRaycaster>().SceneView = this;
+            InScene.SetLayerRecursively(LayerMask.NameToLayer("UI"));
+
             _flyCamera = cameraObj.AddComponent<gb_SceneCamera>();
             _flyCamera.enableZoom = false;
             _flyCamera.enabled = false;
-            _wireframe = cameraObj.AddComponent<gb_WireframeCamera>();
-            _wireframe.setCameraBackgroundColor = false;
 
             _gridCamera = CreateCamera(cameraObj.transform, "Grid", 0, 0, CameraClearFlags.SolidColor, Camera);
             _gridCamera.backgroundColor = Color.black;
@@ -85,9 +94,6 @@ namespace Graybox
             _gizmoCamera.gameObject.SetActive(false);
             _gizmoCamera.farClipPlane = Mathf.Max(Mathf.Abs(_orthographicCameraDistance) * 2, 1000);
 
-            SetWireframeColor(Color.green);
-            SetWireframeBackColor(Color.yellow);
-            SetWireframeThickness(.05f);
             SetAngle(SceneAngle);
         }
 
@@ -139,26 +145,6 @@ namespace Graybox
             UpdateGridZoom();
         }
 
-        public void EnableWireframe(bool enabled)
-        {
-            _wireframe.enableWireframe = enabled;
-        }
-
-        public void SetWireframeColor(Color color)
-        {
-            _wireframe.frontColor = color;
-        }
-
-        public void SetWireframeBackColor(Color color)
-        {
-            _wireframe.backColor = color;
-        }
-
-        public void SetWireframeThickness(float thickness)
-        {
-            _wireframe.wireThickness = thickness;
-        }
-
         public void Focus(Transform tr)
         {
             if (SceneAngle == gb_SceneViewAngle.ThreeDimensional)
@@ -203,21 +189,19 @@ namespace Graybox
             {
                 Camera.orthographic = false;
                 Camera.clearFlags = CameraClearFlags.Skybox;
-                Camera.cullingMask = -1 & ~LayerMask.GetMask("Gizmos", "Grids");
+                Camera.cullingMask = -1;
+                Camera.cullingMask &= ~LayerMask.GetMask("Gizmos", "Grids");
                 _flyCamera.lockRotation = false;
                 _flyCamera.lockWasd = false;
-                _wireframe.enableWireframe = false;
             }
             else
             {
                 _flyCamera.lockRotation = true;
                 _flyCamera.lockWasd = true;
-                _wireframe.enableWireframe = true;
                 Camera.clearFlags = CameraClearFlags.Nothing;
-                Camera.cullingMask = 0;
+                Camera.cullingMask = LayerMask.GetMask("UI");
                 Camera.orthographic = true;
                 Camera.transform.position = new Vector3(0, 0, _orthographicCameraDistance);
-                EnableWireframe(true);
                 switch (angle)
                 {
                     case gb_SceneViewAngle.Front:

@@ -9,8 +9,12 @@ namespace Graybox
         public float GridSize { get; set; } = 32;
         public float SnapSize => UnitScale * GridSize;
         public float RotationSnapSize => 5f;
+        public float ScaleSnapSize => .1f;
         public float ExtrusionSize => 1f;
         public bool SnapToGrid => true;
+        public Color ElementColor => Color.red;
+        public Color ElementHoverColor => Color.yellow;
+        public Color ElementSelectedColor => Color.green;
 
         public float ConvertTo(float unityUnits)
         {
