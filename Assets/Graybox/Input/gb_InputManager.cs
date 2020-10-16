@@ -3,7 +3,6 @@ using Graybox.Tools;
 using Graybox.Utility;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -24,6 +23,7 @@ namespace Graybox.In
         public static GameObject ActiveObject => SelectedObjects.Count > 0 ? SelectedObjects[0] : null;
         public static bool IsDragging { get; private set; }
         public static bool ToolHasFocus { get; private set; }
+        public static bool GuiHasFocus { get; private set; }
 
         private RaycastHit[] _hitCache = new RaycastHit[256];
 
@@ -31,7 +31,7 @@ namespace Graybox.In
         private Rect _dragRect;
         private gb_SceneLabel _szLabel;
         private bool _selectRequiresRelease;
-        private int _pickFrameBuffer;
+        private int _pickFrameDelay;
 
         private void Awake()
         {
@@ -40,10 +40,17 @@ namespace Graybox.In
 
         private void Update()
         {
-            _pickFrameBuffer--;
+            _pickFrameDelay--;
 
             ToolHasFocus = gb_ToolManager.Instance.ToolHasFocus();
+            GuiHasFocus = gb_GuiManager.Instance.GuiHasFocus();
             HitsUnderCursor.Clear();
+
+            if (GuiHasFocus)
+            {
+                _pickFrameDelay = 2;
+                return;
+            }
 
             if (ActiveSceneView.IsFocused)
             {
@@ -94,7 +101,9 @@ namespace Graybox.In
                 }
             }
             if ((ActiveSceneView && !ActiveSceneView.IsHovered) 
-                || _pickFrameBuffer > 0)
+                || _pickFrameDelay > 0
+                || IsDragging
+                || GuiHasFocus)
             {
                 return false;
             }
@@ -117,7 +126,7 @@ namespace Graybox.In
             {
                 if (gb_Binds.JustUp(gb_Bind.Select))
                 {
-                    _pickFrameBuffer = 1;
+                    _pickFrameDelay = 2;
                     _selectRequiresRelease = false;
                 }
                 return;
@@ -138,7 +147,7 @@ namespace Graybox.In
                     OnDragEnd?.Invoke(_dragRect);
                     PerformBoxSelect(_dragRect);
                     IsDragging = false;
-                    _pickFrameBuffer = 1;
+                    _pickFrameDelay = 2;
 
                     if (_szLabel)
                     {

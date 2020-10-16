@@ -17,6 +17,10 @@ namespace Graybox
 
         public override void Raycast(PointerEventData eventData, List<RaycastResult> resultAppendList)
         {
+            if (!SceneView.IsHovered)
+            {
+                return;
+            }
             var pos = SceneView.ScreenToScene(Input.mousePosition);
             var hits = new List<Graphic>();
             var canvas = GetComponent<Canvas>();

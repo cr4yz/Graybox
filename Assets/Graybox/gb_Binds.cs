@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,6 +24,37 @@ namespace Graybox
         Confirm
     }
 
+    public class gb_Shortcut
+    {
+        public string Name;
+        public List<KeyCode> Keycodes = new List<KeyCode>();
+        public Action Action;
+        public bool Triggered;
+
+        public string KeysAsString()
+        {
+            return string.Join(" + ", Keycodes);
+        }
+
+        public bool JustPressed()
+        {
+            foreach(var key in Keycodes)
+            {
+                if (!Input.GetKey(key))
+                {
+                    Triggered = false;
+                    return false;
+                }
+            }
+            if (Triggered)
+            {
+                return false;
+            }
+            Triggered = true;
+            return true;
+        }
+    }
+
     public class gb_Binds : gb_Singleton<gb_Binds>
     {
 
@@ -45,6 +77,8 @@ namespace Graybox
             { gb_Bind.Confirm, KeyCode.Return },
         };
 
+        public static List<gb_Shortcut> Shortcuts { get; } = new List<gb_Shortcut>();
+
         public static bool IsDown(gb_Bind input)
         {
             return Binds.ContainsKey(input) && Input.GetKey(Binds[input]);
@@ -58,6 +92,28 @@ namespace Graybox
         public static bool JustUp(gb_Bind input)
         {
             return Binds.ContainsKey(input) && Input.GetKeyUp(Binds[input]);
+        }
+
+        public static void RegisterShortcut(string name, Action action, List<KeyCode> keycodes)
+        {
+            var shortcut = new gb_Shortcut()
+            {
+                Name = name,
+                Action = action,
+                Keycodes = keycodes
+            };
+            Shortcuts.Add(shortcut);
+        }
+
+        private void Update()
+        {
+            foreach(var shortcut in Shortcuts)
+            {
+                if (shortcut.JustPressed())
+                {
+                    shortcut.Action?.Invoke();
+                }
+            }
         }
 
     }

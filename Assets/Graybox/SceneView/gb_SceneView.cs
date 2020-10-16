@@ -130,6 +130,8 @@ namespace Graybox
 
         private void Update()
         {
+            IsHovered = RectTransformUtility.RectangleContainsScreenPoint(RectTransform, Input.mousePosition, Camera.main);
+
             if(_wantsFocus && !IsFocused)
             {
                 TrySetActive();
@@ -242,14 +244,14 @@ namespace Graybox
 
         void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
         {
-            IsHovered = true;
+            //IsHovered = true;
             _wantsFocus = true;
             TrySetActive();
         }
 
         void IPointerExitHandler.OnPointerExit(PointerEventData eventData)
         {
-            IsHovered = false;
+            //IsHovered = false;
             _wantsFocus = false;
         }
 

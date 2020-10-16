@@ -23,7 +23,7 @@ namespace Graybox
                 {
                     if (m_Instance == null)
                     {
-                        m_Instance = (T)FindObjectOfType(typeof(T));
+                        m_Instance = (T)FindObjectOfType(typeof(T), true);
 
                         if (m_Instance == null)
                         {

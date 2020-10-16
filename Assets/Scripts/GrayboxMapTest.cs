@@ -1,6 +1,5 @@
 using Graybox;
-using System.Collections;
-using System.Collections.Generic;
+using Graybox.Gui;
 using System.IO;
 using UnityEngine;
 
@@ -17,6 +16,11 @@ public class GrayboxMapTest : MonoBehaviour
 
     private void Update()
     {
+        if (gb_GuiManager.Instance.GuiInputHasFocus())
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             gb_Map.ActiveMap.Save(_testFilePath);

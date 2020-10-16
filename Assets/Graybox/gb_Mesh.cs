@@ -85,7 +85,7 @@ namespace Graybox
                 return;
             }
 
-            var color = isSelected ? Color.yellow : Color.white;
+            var color = isSelected ? gb_Settings.Instance.ObjectSelectedColor : gb_Settings.Instance.ObjectColor;
             sceneView.Draw.Add(new gb_DrawMeshOutline(sceneView, GameObject.GetComponent<ProBuilderMesh>())
             {
                 Color = color

@@ -1,3 +1,4 @@
+using Graybox.Gui;
 using Graybox.In;
 using UnityEngine;
 
@@ -28,6 +29,11 @@ namespace Graybox
 
         private void Update()
 		{
+            if (gb_GuiManager.Instance.GuiHasFocus())
+            {
+				return;
+            }
+
 			if (enableDrag)
 			{
                 if (gb_Binds.JustDown(gb_Bind.PanCamera))

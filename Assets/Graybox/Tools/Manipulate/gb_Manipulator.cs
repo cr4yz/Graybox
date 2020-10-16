@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.ProBuilder;
+using UnityEngine.ProBuilder.MeshOperations;
 
 namespace Graybox.Tools
 {
@@ -27,6 +28,26 @@ namespace Graybox.Tools
     {
 
         public override string ToolName => "Manipulator";
+        public override bool HasFocus
+        {
+            get
+            {
+                if (!Pbm) { return false; }
+                if (Mode == gb_ManipulatorMode.Edges && _hoveredEdge != default)
+                {
+                    return true;
+                }
+                else if (Mode == gb_ManipulatorMode.Faces && _hoveredFace != null)
+                {
+                    return true;
+                }
+                else if (Mode == gb_ManipulatorMode.Vertices && _hoveredVertice != -1)
+                {
+                    return true;
+                }
+                return base.HasFocus;
+            }
+        }
         public ProBuilderMesh Pbm => Target != null ? Target.GetComponent<ProBuilderMesh>() : null;
         public gb_ManipulatorMode Mode
         {
@@ -59,6 +80,15 @@ namespace Graybox.Tools
 
             Handle = gb_ManipulatorHandle.Move;
             Mode = gb_ManipulatorMode.Vertices;
+
+            gb_Binds.RegisterShortcut("Extrude", () =>
+            {
+                if (!gameObject.activeSelf)
+                {
+                    return;
+                }
+                ExtrudeSelection(gb_Settings.Instance.ExtrusionSize);
+            }, new List<KeyCode>() { KeyCode.LeftControl, KeyCode.E });
         }
 
         protected override void OnEnabled()
@@ -76,6 +106,21 @@ namespace Graybox.Tools
             _hoveredFace = null;
             _hoveredEdge = default;
             _transformTool.gameObject.SetActive(false);
+        }
+
+        public void ExtrudeSelection(float extrusionAmount)
+        {
+            switch (Mode)
+            {
+                case gb_ManipulatorMode.Edges:
+                    Pbm.Extrude(Pbm.selectedEdges.ToList(), extrusionAmount, true, true);
+                    break;
+                case gb_ManipulatorMode.Faces:
+                    Pbm.Extrude(Pbm.GetSelectedFaces(), ExtrudeMethod.FaceNormal, extrusionAmount);
+                    break;
+            }
+            ApplyMesh();
+            UpdatePivotObject();
         }
 
         private List<int> VertsToManipulate(bool distinct = false)
@@ -156,6 +201,7 @@ namespace Graybox.Tools
             var t = new HashSet<int>(points);
             for (int i = 0; i < points.Length; i++)
             {
+                // todo : Make sure otherPoints are actually shared points, not just shared positions.
                 var newPosition = mtx.MultiplyPoint3x4(verts[points[i]].position - centerOfTransformation) + centerOfTransformation;
                 var otherPoints = verts.Where((v, idx) => !t.Contains(idx) && v.position == verts[points[i]].position);
                 foreach (var point in otherPoints)
@@ -280,7 +326,7 @@ namespace Graybox.Tools
             var options = new PickerOptions()
             {
                 depthTest = false,
-                rectSelectMode = RectSelectMode.Complete
+                rectSelectMode = RectSelectMode.Partial
             };
 
             var vertHits = SelectionPicker.PickVerticesInRect(gb_InputManager.ActiveSceneView.Camera, guiSpaceRect, meshes, options);
@@ -309,14 +355,14 @@ namespace Graybox.Tools
             return result;
         }
 
-        private List<Edge> BoxSelectEdges(Rect guiSpaceRect)
+        private List<Edge> BoxSelectEdges(Rect guiSpaceRect, RectSelectMode mode = RectSelectMode.Complete)
         {
             var result = new List<Edge>();
             var meshes = new ProBuilderMesh[] { Pbm };
             var options = new PickerOptions()
             {
                 depthTest = false,
-                rectSelectMode = RectSelectMode.Complete
+                rectSelectMode = mode
             };
             var hits = SelectionPicker.PickEdgesInRect(gb_InputManager.ActiveSceneView.Camera, guiSpaceRect, meshes, options);
             foreach (var hit in hits)
@@ -334,6 +380,50 @@ namespace Graybox.Tools
             if (target != null)
             {
                 Cache();
+                UpdatePivotObject();
+            }
+        }
+
+        protected override void OnUpdate()
+        {
+            if (!Pbm || !gb_InputManager.Instance.CanPick(this))
+            {
+                return;
+            }
+
+            var scenePos = gb_InputManager.ActiveSceneView.ScreenToScene(Input.mousePosition);
+            var min = scenePos - new Vector2(8, 8);
+            var guiRect = new Rect(min, new Vector2(16, 16)).SceneToGui(gb_InputManager.ActiveSceneView);
+
+            switch (Mode)
+            {
+                case gb_ManipulatorMode.Vertices:
+                    var hoveredVerts = BoxSelectSharedVerts(guiRect);
+                    _hoveredVertice = hoveredVerts.Count > 0 ? hoveredVerts[0] : -1;
+                    break;
+                case gb_ManipulatorMode.Faces:
+                    _hoveredFace = SelectionPicker.PickFace(gb_InputManager.ActiveSceneView.Camera, gb_InputManager.Instance.ScreenToScene(Input.mousePosition), Pbm);
+                    break;
+                case gb_ManipulatorMode.Edges:
+                    var hoveredEdges = BoxSelectEdges(guiRect, RectSelectMode.Partial);
+                    _hoveredEdge = hoveredEdges.Count > 0 ? hoveredEdges[0] : default;
+                    break;
+            }
+
+            if(gb_Binds.JustUp(gb_Bind.Select))
+            {
+                switch (Mode)
+                {
+                    case gb_ManipulatorMode.Vertices:
+                        DoSelect(_hoveredVertice != -1 ? new List<int>() { _hoveredVertice } : null);
+                        break;
+                    case gb_ManipulatorMode.Faces:
+                        DoSelect(_hoveredFace != null ? new List<Face>() { _hoveredFace } : null);
+                        break;
+                    case gb_ManipulatorMode.Edges:
+                        DoSelect(_hoveredEdge != default ? new List<Edge>() { _hoveredEdge } : null);
+                        break;
+                }
                 UpdatePivotObject();
             }
         }
@@ -531,18 +621,27 @@ namespace Graybox.Tools
         private void DrawSelectionEdges()
         {
             DrawEdges(Pbm.selectedEdges, Color.green);
+            if(_hoveredEdge != default) 
+            {
+                DrawEdge(_hoveredEdge, gb_Settings.Instance.ElementHoverColor);
+            }
         }
 
         private void DrawEdges(IEnumerable<Edge> edges, Color color)
         {
             foreach(var edge in edges)
             {
-                var wsa = _worldSpaceVertCache[edge.a];
-                var wsb = _worldSpaceVertCache[edge.b];
-                var ssa = gb_InputManager.ActiveSceneView.WorldToScreen(wsa);
-                var ssb = gb_InputManager.ActiveSceneView.WorldToScreen(wsb);
-                gb_InputManager.ActiveSceneView.Draw.Draw2dLine(ssa, ssb, 5f, color);
+                DrawEdge(edge, color);
             }
+        }
+
+        private void DrawEdge(Edge edge, Color color)
+        {
+            var wsa = _worldSpaceVertCache[edge.a];
+            var wsb = _worldSpaceVertCache[edge.b];
+            var ssa = gb_InputManager.ActiveSceneView.WorldToScreen(wsa);
+            var ssb = gb_InputManager.ActiveSceneView.WorldToScreen(wsb);
+            gb_InputManager.ActiveSceneView.Draw.Draw2dLine(ssa, ssb, 5f, color);
         }
 
         private Vector3 GetSharedVertexPosition(int vert, bool inWorldSpace = true)

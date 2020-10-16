@@ -11,7 +11,7 @@ namespace Graybox.Tools
 
         public virtual bool DontDrawDragRect { get; }
         public abstract string ToolName { get; }
-        public bool HasFocus
+        public virtual bool HasFocus
         {
             get
             {

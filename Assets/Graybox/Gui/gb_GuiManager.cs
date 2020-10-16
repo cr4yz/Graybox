@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Graybox.Gui
 {
@@ -8,6 +6,30 @@ namespace Graybox.Gui
     {
 
         private List<gb_GuiElement> _guiElements = new List<gb_GuiElement>();
+
+        public bool GuiHasFocus()
+        {
+            foreach(var element in _guiElements)
+            {
+                if (element.BlocksInput)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool GuiInputHasFocus()
+        {
+            foreach (var element in _guiElements)
+            {
+                if (element.InputHasFocus)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public void Add(gb_GuiElement guiElement)
         {
