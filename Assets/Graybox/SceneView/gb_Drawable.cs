@@ -13,7 +13,7 @@ namespace Graybox
 
         static Material _lineMaterial;
 
-        public void OnPostRender()
+        public void OnPostRender(Camera cam)
         {
             if (!_lineMaterial)
             {
@@ -33,7 +33,15 @@ namespace Graybox
             }
             else
             {
-
+                GL.PushMatrix();
+                _lineMaterial.SetPass(0);
+                GL.LoadProjectionMatrix(cam.projectionMatrix);
+                GL.modelview = cam.worldToCameraMatrix;
+                GL.Begin(DrawMode);
+                GL.Color(Color);
+                Draw();
+                GL.End();
+                GL.PopMatrix();
             }
         }
 
@@ -51,7 +59,7 @@ namespace Graybox
             // Turn backface culling off
             _lineMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
             // Turn off depth writes
-            _lineMaterial.SetInt("_ZWrite", 0);
+            _lineMaterial.SetInt("_ZWrite", 1);
         }
     }
 }

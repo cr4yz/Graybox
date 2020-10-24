@@ -30,6 +30,12 @@ namespace Graybox
 
         protected override void Draw()
         {
+            if (!_pbm)
+            {
+                Debug.LogError("PBM Missing");
+                return;
+            }
+
             var verts = _pbm.VerticesInWorldSpace();
             foreach (var face in _pbm.faces)
             {

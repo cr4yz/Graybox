@@ -7,9 +7,20 @@ namespace Graybox
 {
     public class gb_Map : MonoBehaviour
     {
-        public static gb_Map ActiveMap;
+        private static gb_Map _activeMap;
+        public static gb_Map ActiveMap
+        {
+            get
+            {
+                if (!_activeMap)
+                {
+                    _activeMap = Create("Default Map");
+                }
+                return _activeMap;
+            }
+        }
 
-        static JsonSerializerSettings _serializerSettings
+        public static JsonSerializerSettings SerializationSettings
             = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.All,
@@ -22,18 +33,18 @@ namespace Graybox
 
         private void OnEnable()
         {
-            if (ActiveMap)
+            if (_activeMap)
             {
-                ActiveMap.gameObject.SetActive(false);
+                _activeMap.gameObject.SetActive(false);
             }
-            ActiveMap = this;
+            _activeMap = this;
         }
 
         private void OnDisable()
         {
-            if (ActiveMap == this)
+            if (_activeMap == this)
             {
-                ActiveMap = null;
+                _activeMap = null;
             }
         }
 
@@ -68,6 +79,18 @@ namespace Graybox
             obj.Map = this;
         }
 
+        public gb_Object DuplicateObject(gb_Object obj)
+        {
+            obj.Save();
+            var serializedObj = JsonConvert.SerializeObject(obj, SerializationSettings);
+            var duplicatedObject = (gb_Object)JsonConvert.DeserializeObject(serializedObj, SerializationSettings);
+            var gameObj = new GameObject("gb_Object Clone of #" + obj.ObjectId);
+            duplicatedObject.Integrate(gameObj);
+            duplicatedObject.Load();
+            AddObject(duplicatedObject);
+            return duplicatedObject;
+        }
+
         public void Save(string filePath)
         {
             FilePath = filePath;
@@ -77,7 +100,7 @@ namespace Graybox
                 obj.Object.Save();
             }
 
-            var mapJson = JsonConvert.SerializeObject(MapInfo, _serializerSettings);
+            var mapJson = JsonConvert.SerializeObject(MapInfo, SerializationSettings);
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
             File.WriteAllText(filePath, mapJson);
         }
@@ -90,7 +113,7 @@ namespace Graybox
             }
 
             var mapJson = File.ReadAllText(filePath);
-            MapInfo = JsonConvert.DeserializeObject<gb_MapInfo>(mapJson, _serializerSettings);
+            MapInfo = JsonConvert.DeserializeObject<gb_MapInfo>(mapJson, SerializationSettings);
             var objList = new List<gb_Object>(MapInfo.Objects);
             MapInfo.Objects.Clear();
 

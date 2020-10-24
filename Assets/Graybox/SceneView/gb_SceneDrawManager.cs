@@ -12,6 +12,12 @@ namespace Graybox
 
         private List<gb_Drawable> _drawables = new List<gb_Drawable>();
         private List<gb_Drawable> _pool = new List<gb_Drawable>();
+        private Camera _camera;
+
+        private void Start()
+        {
+            _camera = GetComponent<Camera>();
+        }
 
         private void Update()
         {
@@ -29,7 +35,7 @@ namespace Graybox
 
         private void OnPostRender()
         {
-            if (RenderObjects)
+            if (RenderObjects && gb_Map.ActiveMap)
             {
                 foreach (var obj in gb_Map.ActiveMap.MapInfo.Objects)
                 {
@@ -39,7 +45,7 @@ namespace Graybox
 
             for (int i = _drawables.Count - 1; i >= 0; i--)
             {
-                _drawables[i].OnPostRender();
+                _drawables[i].OnPostRender(_camera);
                 _drawables[i].Drawn = true;
             }
         }
@@ -47,6 +53,11 @@ namespace Graybox
         public void Add(gb_Drawable drawable)
         {
             _drawables.Add(drawable);
+        }
+
+        public void Remove(gb_Drawable drawable)
+        {
+            _drawables.Remove(drawable);
         }
 
         public void Draw2dQuad(Rect rect, Color color)

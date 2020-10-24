@@ -88,7 +88,7 @@ namespace Graybox
 				var velocity = GetInputDirection();
 				if (gb_Binds.IsDown(gb_Bind.FreeLookAccelerate))
 				{
-					_totalRun = Mathf.Clamp(_totalRun + Time.deltaTime, 0, 6.5f);
+					_totalRun = Mathf.Clamp(_totalRun + Time.deltaTime, 1, 6.5f);
 					velocity *= _totalRun * shiftAdd;
 					velocity = Vector3.ClampMagnitude(velocity, maxShift);
 				}

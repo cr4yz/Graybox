@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.ProBuilder;
+using UnityEngine.ProBuilder.MeshOperations;
 
 namespace Graybox
 {
@@ -26,6 +27,8 @@ namespace Graybox
         private MeshRenderer _mr;
         [JsonIgnore]
         private MeshCollider _mc;
+        [JsonIgnore]
+        private ProBuilderMesh _pbm;
 
         protected override void OnSave()
         {
@@ -58,6 +61,29 @@ namespace Graybox
             _mc.sharedMesh = _mf.sharedMesh;
             _mc.convex = ColliderIsConvex;
             _mc.isTrigger = ColliderIsTrigger;
+
+            MeshImportSettings settings = new MeshImportSettings()
+            {
+                quads = true,
+                smoothing = true,
+                smoothingAngle = 1f
+            };
+
+            GameObject go = _mf.gameObject;
+            Mesh sourceMesh = _mf.sharedMesh;
+            Material[] sourceMaterials = go.GetComponent<MeshRenderer>()?.sharedMaterials;
+
+            try
+            {
+                var meshImporter = new MeshImporter(sourceMesh, sourceMaterials, _pbm);
+                meshImporter.Import(settings);
+
+                //_pbm.Refresh();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("Failed ProBuilderizing: " + go.name + "\n" + e.ToString());
+            }
         }
 
         protected override void OnIntegrated()
@@ -73,6 +99,10 @@ namespace Graybox
             if (!GameObject.TryGetComponent(out _mc))
             {
                 _mc = GameObject.AddComponent<MeshCollider>();
+            }
+            if (!GameObject.TryGetComponent(out _pbm))
+            {
+                _pbm = GameObject.AddComponent<ProBuilderMesh>();
             }
         }
 

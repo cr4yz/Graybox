@@ -13,6 +13,7 @@ namespace Graybox.In
     {
 
         public static UnityEvent<Rect> OnDrag = new UnityEvent<Rect>();
+        public static UnityEvent<Rect> OnDragStart = new UnityEvent<Rect>();
         public static UnityEvent<Rect> OnDragEnd = new UnityEvent<Rect>();
         public static UnityEvent<Rect, List<GameObject>> OnBoxSelect = new UnityEvent<Rect, List<GameObject>>();
 
@@ -85,6 +86,21 @@ namespace Graybox.In
             {
                 SelectedObjects.AddRange(potentialObjects.Select(x => x.gameObject));
             }
+        }
+
+        public void DuplicateSelection()
+        {
+            var newSelection = new List<GameObject>();
+
+            foreach(var obj in SelectedObjects)
+            {
+                var gbObj = obj.GetComponent<gb_ObjectComponent>();
+                var clone = gb_Map.ActiveMap.DuplicateObject(gbObj.Object);
+                newSelection.Add(clone.GameObject);
+            }
+
+            SelectedObjects.Clear();
+            SelectedObjects.AddRange(newSelection);
         }
 
         public bool CanPick(gb_Tool allowFocus = null)
@@ -174,9 +190,17 @@ namespace Graybox.In
                 if (Vector2.Distance(finalDragStart, finalDragEnd) > 10
                     && !ToolHasFocus)
                 {
+                    var wasDragging = IsDragging;
                     IsDragging = true;
                     _dragRect = new Rect(finalDragStart, finalDragEnd - finalDragStart);
-                    ActiveSceneView.Draw.Draw2dRect(_dragRect, 2f, 0, false, Color.yellow);
+                    if(!gb_ToolManager.Instance.ActiveTool || !gb_ToolManager.Instance.ActiveTool.DontDrawDragRect)
+                    {
+                        ActiveSceneView.Draw.Draw2dRect(_dragRect, 2f, 0, false, Color.yellow);
+                    }
+                    if (!wasDragging)
+                    {
+                        OnDragStart?.Invoke(_dragRect);
+                    }
                     OnDrag?.Invoke(_dragRect);
 
                     if (!is3d)

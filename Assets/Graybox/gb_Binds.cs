@@ -21,7 +21,8 @@ namespace Graybox
         MoveBack,
         PanCamera,
         Cancel,
-        Confirm
+        Confirm,
+        DuplicateOnDrag
     }
 
     public class gb_Shortcut
@@ -75,6 +76,7 @@ namespace Graybox
             { gb_Bind.PanCamera, KeyCode.Mouse2 },
             { gb_Bind.Cancel, KeyCode.Escape },
             { gb_Bind.Confirm, KeyCode.Return },
+            { gb_Bind.DuplicateOnDrag, KeyCode.LeftControl },
         };
 
         public static List<gb_Shortcut> Shortcuts { get; } = new List<gb_Shortcut>();

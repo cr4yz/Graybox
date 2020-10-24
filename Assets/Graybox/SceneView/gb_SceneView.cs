@@ -38,14 +38,17 @@ namespace Graybox
         private GameObject _rootObject;
         private Camera _gridCamera;
         private Camera _gizmoCamera;
+        private Gb_Draw2dGrid _gridDrawable;
 
         private const float _orthographicCameraDistance = -50000;
 
         private void Awake()
         {
+            var rtSize = new Vector2(Screen.width, Screen.height);
+
             RectTransform = GetComponent<RectTransform>();
 
-            _renderTexture = new RenderTexture(1280, 720, 0);
+            _renderTexture = new RenderTexture((int)rtSize.x, (int)rtSize.y, 0);
             _renderTexture.antiAliasing = 8;
             _renderTexture.filterMode = FilterMode.Trilinear;
             GetComponent<RawImage>().texture = _renderTexture;
@@ -74,7 +77,7 @@ namespace Graybox
             inSceneCanvas.planeDistance = 1;
             var canvasScaler = InScene.AddComponent<CanvasScaler>();
             canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            canvasScaler.referenceResolution = new Vector2(1280, 720);
+            canvasScaler.referenceResolution = rtSize;
             InScene.AddComponent<gb_SceneViewRaycaster>().SceneView = this;
             InScene.SetLayerRecursively(LayerMask.NameToLayer("UI"));
 
@@ -83,12 +86,12 @@ namespace Graybox
             _flyCamera.enabled = false;
 
             _gridCamera = CreateCamera(cameraObj.transform, "Grid", 0, 0, CameraClearFlags.SolidColor, Camera);
+            _gridCamera.gameObject.AddComponent<gb_SceneDrawManager>();
             _gridCamera.backgroundColor = Color.black;
-            var draw = _gridCamera.gameObject.AddComponent<gb_SceneDrawManager>();
-            draw.Add(new Gb_Draw2dGrid(this)
+            _gridDrawable = new Gb_Draw2dGrid(this)
             {
                 Duration = float.MaxValue
-            });
+            };
 
             _gizmoCamera = CreateCamera(cameraObj.transform, "Gizmos", 2, LayerMask.GetMask("Gizmos"), CameraClearFlags.Nothing, Camera);
             _gizmoCamera.gameObject.SetActive(false);
@@ -195,11 +198,13 @@ namespace Graybox
                 Camera.cullingMask &= ~LayerMask.GetMask("Gizmos", "Grids");
                 _flyCamera.lockRotation = false;
                 _flyCamera.lockWasd = false;
+                _gridCamera.GetComponent<gb_SceneDrawManager>().Remove(_gridDrawable);
             }
             else
             {
                 _flyCamera.lockRotation = true;
                 _flyCamera.lockWasd = true;
+                _gridCamera.GetComponent<gb_SceneDrawManager>().Add(_gridDrawable);
                 Camera.clearFlags = CameraClearFlags.Nothing;
                 Camera.cullingMask = LayerMask.GetMask("UI");
                 Camera.orthographic = true;

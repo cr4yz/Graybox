@@ -62,6 +62,7 @@ namespace Graybox.Tools
         private void OnEnable()
         {
             gb_InputManager.OnDrag.AddListener(OnDrag);
+            gb_InputManager.OnDragStart.AddListener(OnDragStart);
             gb_InputManager.OnDragEnd.AddListener(OnDragEnd);
             gb_InputManager.OnBoxSelect.AddListener(OnBoxSelect);
 
@@ -79,6 +80,7 @@ namespace Graybox.Tools
             TargetOverride = null;
 
             gb_InputManager.OnDrag.RemoveListener(OnDrag);
+            gb_InputManager.OnDragStart.AddListener(OnDragStart);
             gb_InputManager.OnDragEnd.RemoveListener(OnDragEnd);
             gb_InputManager.OnBoxSelect.RemoveListener(OnBoxSelect);
 
@@ -142,6 +144,7 @@ namespace Graybox.Tools
         protected virtual void OnDestroyed() { }
         protected virtual void OnUpdate() { }
         protected virtual void OnLateUpdate() { }
+        protected virtual void OnDragStart(Rect dragRect) { }
         protected virtual void OnDragEnd(Rect dragRect) { }
         protected virtual void OnDrag(Rect dragRect) { }
         protected virtual void OnBoxSelect(Rect dragRect, List<GameObject> hits) { }

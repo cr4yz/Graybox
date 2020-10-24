@@ -29,22 +29,7 @@ namespace Graybox.Tools
         {
             var delta = _startingRotation * Quaternion.Inverse(_absRotation) * Camera.cameraToWorldMatrix.MultiplyVector(new Vector3(screenDelta.y, -screenDelta.x, 0));
             var rotationAxis = Quaternion.Inverse(_absRotation) * (_startingRotationAxis * (_hitIsBehind ? -1 : 1));
-            var rotation = Quaternion.identity;
-
-            if(handle.Axis == Vector3.right)
-            {
-                rotation = Quaternion.AngleAxis(delta.x, rotationAxis);
-            }
-            else if(handle.Axis == Vector3.up)
-            {
-                rotation = Quaternion.AngleAxis(delta.y, rotationAxis);
-            }
-            else if(handle.Axis == Vector3.forward)
-            {
-                rotation = Quaternion.AngleAxis(delta.z, rotationAxis);
-            }
-
-            _absRotation *= rotation;
+            _absRotation *= Quaternion.AngleAxis(delta.MagnitudeInDirection(rotationAxis), rotationAxis);
 
             Target.rotation = Quaternion.Euler(_absRotation.eulerAngles.Snap(gb_Settings.Instance.RotationSnapSize));
         }

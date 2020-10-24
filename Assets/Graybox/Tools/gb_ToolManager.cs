@@ -8,6 +8,7 @@ namespace Graybox.Tools
 
         private gb_Tool _activeTool;
         public gb_Tool[] Tools { get; private set; }
+        public gb_Tool ActiveTool => _activeTool;
 
         private void Awake()
         {
